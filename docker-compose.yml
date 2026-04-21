@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    platform: linux/arm64
+    container_name: shortlink_postgres
+    environment:
+      POSTGRES_USER: shortlink
+      POSTGRES_PASSWORD: shortlink123
+      POSTGRES_DB: shortlink
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shortlink"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    platform: linux/arm64
+    container_name: shortlink_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    platform: linux/arm64
+    container_name: shortlink_backend
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://shortlink:shortlink123@postgres:5432/shortlink
+      REDIS_URL: redis://redis:6379
+      RUST_LOG: info
+      RATE_LIMIT_PER_MINUTE: 10
+      CACHE_TTL_SECONDS: 3600
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    platform: linux/arm64
+    container_name: shortlink_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NUXT_PUBLIC_API_BASE: http://localhost:8080
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
