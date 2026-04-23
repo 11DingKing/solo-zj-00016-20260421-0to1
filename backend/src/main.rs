@@ -42,10 +42,12 @@ async fn main() {
     });
 
     let cors = CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin([
+            "http://localhost:3000".parse::<HeaderValue>().unwrap(),
+        ])
         .allow_headers([ACCEPT, CONTENT_TYPE, ORIGIN])
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
-        .allow_credentials(false);
+        .allow_credentials(true);
 
     let app = Router::new()
         .merge(routes::create_routes(app_state))

@@ -12,7 +12,7 @@ impl CachePool {
     pub async fn new(redis_url: &str) -> Result<Self, AppError> {
         let client = Client::open(redis_url)?;
         let mut conn = client.get_async_connection().await?;
-        redis::cmd("PING").query_async(&mut conn).await?;
+        redis::cmd("PING").query_async::<_, ()>(&mut conn).await?;
         
         Ok(Self {
             client: Arc::new(client),
@@ -42,7 +42,7 @@ impl CachePool {
             .arg(&key)
             .arg(ttl_seconds)
             .arg(original_url)
-            .query_async(&mut conn)
+            .query_async::<_, ()>(&mut conn)
             .await?;
         
         Ok(())
@@ -73,12 +73,12 @@ impl CachePool {
                 .arg(&key)
                 .arg(60u64)
                 .arg(1u64)
-                .query_async(&mut conn)
+                .query_async::<_, ()>(&mut conn)
                 .await?;
         } else {
             redis::cmd("INCR")
                 .arg(&key)
-                .query_async(&mut conn)
+                .query_async::<_, ()>(&mut conn)
                 .await?;
         }
         

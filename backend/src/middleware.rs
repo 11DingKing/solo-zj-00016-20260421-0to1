@@ -1,11 +1,10 @@
 use axum::{
     async_trait,
-    extract::{ConnectInfo, FromRequestParts, Request},
-    http::header::COOKIE,
+    extract::{FromRequestParts, State},
+    http::{header::COOKIE, request::Parts, Request},
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use std::net::SocketAddr;
 use std::sync::Arc;
 
 use crate::AppState;
@@ -41,8 +40,6 @@ where
 }
 
 pub async fn set_user_cookie<B>(
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    state: Arc<AppState>,
     mut req: Request<B>,
     next: Next<B>,
 ) -> Response {
@@ -109,8 +106,7 @@ where
 }
 
 pub async fn rate_limit<B>(
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    state: Arc<AppState>,
+    State(state): State<Arc<AppState>>,
     req: Request<B>,
     next: Next<B>,
 ) -> Response {
@@ -131,7 +127,7 @@ pub async fn rate_limit<B>(
                 .and_then(|h| h.to_str().ok())
                 .map(|s| s.to_string())
         })
-        .unwrap_or_else(|| addr.ip().to_string());
+        .unwrap_or_else(|| "127.0.0.1".to_string());
 
     let count = match state.cache.get_rate_limit_count(&ip).await {
         Ok(c) => c,

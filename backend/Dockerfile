@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 rust:1.75-alpine as builder
+FROM --platform=linux/arm64 rust:alpine as builder
 
 RUN apk add --no-cache musl-dev openssl-dev
 
