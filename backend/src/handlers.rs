@@ -192,5 +192,5 @@ pub async fn redirect_short_link(
         )
         .await?;
 
-    Ok(Redirect::temporary(&link.original_url).into_response())
+    Ok(Redirect::found(&link.original_url).into_response())
 }

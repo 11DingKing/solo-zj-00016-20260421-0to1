@@ -21,6 +21,10 @@ where
     type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        if let Some(cookie) = parts.extensions.get::<UserCookie>() {
+            return Ok(UserCookie(cookie.0.clone()));
+        }
+
         let cookie_value = parts
             .headers
             .get(COOKIE)
