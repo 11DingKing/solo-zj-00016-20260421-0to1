@@ -32,8 +32,27 @@ pub async fn create_short_link(
     State(state): State<Arc<AppState>>,
     user_cookie: UserCookie,
     headers: HeaderMap,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Json(payload): Json<CreateShortLinkRequest>,
 ) -> Result<Json<ShortLinkResponse>, AppError> {
+    let ip = headers
+        .get("x-forwarded-for")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim().to_string())
+        .or_else(|| {
+            headers.get("x-real-ip")
+                .and_then(|h| h.to_str().ok())
+                .map(|s| s.to_string())
+        })
+        .unwrap_or_else(|| addr.ip().to_string());
+
+    let count = state.cache.get_rate_limit_count(&ip).await?;
+    if count >= state.config.rate_limit_per_minute {
+        return Err(AppError::RateLimitExceeded);
+    }
+    state.cache.increment_rate_limit(&ip).await?;
+
     if !validate_url(&payload.original_url) {
         return Err(AppError::InvalidUrl);
     }
@@ -192,5 +211,5 @@ pub async fn redirect_short_link(
         )
         .await?;
 
-    Ok(Redirect::found(&link.original_url).into_response())
+    Ok(Redirect::to(&link.original_url).into_response())
 }
