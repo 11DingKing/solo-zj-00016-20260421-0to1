@@ -1,6 +1,6 @@
 use axum::{
     async_trait,
-    extract::{FromRequestParts, State},
+    extract::FromRequestParts,
     http::{header::COOKIE, request::Parts, Request},
     middleware::Next,
     response::{IntoResponse, Response},
@@ -110,7 +110,7 @@ where
 }
 
 pub async fn rate_limit<B>(
-    State(state): State<Arc<AppState>>,
+    state: Arc<AppState>,
     req: Request<B>,
     next: Next<B>,
 ) -> Response {
